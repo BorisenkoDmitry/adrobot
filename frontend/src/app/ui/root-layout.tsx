@@ -1,12 +1,13 @@
-import { Activity, GitFork, Languages, Layers3, Moon, Sun } from 'lucide-react'
+import { Activity, GitFork, Layers3, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 
 import { useI18n } from '@/shared/i18n'
 import { Button } from '@/shared/ui/button'
 
-import { localeChanged, localeStorageKey, themeStorageKey, toggleTheme } from '../model/preferences'
+import { localeStorageKey, themeStorageKey, toggleTheme } from '../model/preferences'
 import { useAppDispatch, useAppSelector } from '../model/store'
+import { LanguageSelect } from './language-select'
 
 export function RootLayout() {
   const theme = useAppSelector((state) => state.preferences.theme)
@@ -46,14 +47,7 @@ export function RootLayout() {
             {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
             <span className="theme-label">{t(isDark ? 'nav.light' : 'nav.dark')}</span>
           </Button>
-          <div className="sidebar-language">
-            <Languages aria-hidden="true" />
-            <select className="field" value={locale} aria-label={t('nav.language')}
-              onChange={(event) => dispatch(localeChanged(event.target.value === 'en' ? 'en' : 'ru'))}>
-              <option value="ru" lang="ru">Русский</option>
-              <option value="en" lang="en">English</option>
-            </select>
-          </div>
+          <LanguageSelect />
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="app-main">
