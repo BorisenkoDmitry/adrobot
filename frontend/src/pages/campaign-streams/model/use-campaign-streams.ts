@@ -8,6 +8,7 @@ export function useCampaignStreams(campaignId: number) {
 
   return {
     result,
+    offerStreams: result.data?.filter((stream) => stream.editable) ?? [],
     reloadBlocked: result.isFetching || pendingEdits > 0,
     reload: () => { void result.refetch() },
   }

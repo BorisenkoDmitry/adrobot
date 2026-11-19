@@ -24,7 +24,7 @@ function webUrl(value?: string | null) {
 }
 
 function CampaignEditor({ campaign }: { campaign: Campaign }) {
-  const { result: streams, reloadBlocked, reload } = useCampaignStreams(campaign.id)
+  const { result: streams, offerStreams, reloadBlocked, reload } = useCampaignStreams(campaign.id)
   const url = webUrl(campaign.url)
   const adminUrl = webUrl(campaign.admin_url)
 
@@ -63,11 +63,11 @@ function CampaignEditor({ campaign }: { campaign: Campaign }) {
       {streams.isPending && <LoadingState>Загружаем потоки…</LoadingState>}
       {streams.isError && <ErrorState error={streams.error} />}
       {streams.data && (
-        streams.data.length ? (
-          <div className="stream-list">{streams.data.map((stream) => (
+        offerStreams.length ? (
+          <div className="stream-list">{offerStreams.map((stream) => (
             <StreamEditor key={stream.id} stream={stream} refreshing={streams.isFetching} />
           ))}</div>
-        ) : <div className="workspace-panel section-state"><GitFork aria-hidden="true" />В кампании пока нет потоков.</div>
+        ) : <div className="workspace-panel section-state"><GitFork aria-hidden="true" />В кампании нет потоков для офферов.</div>
       )}
     </section>
   )

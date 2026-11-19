@@ -50,7 +50,7 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
   </ul>
   <ol>
     <li>Список кампаний с пагинацией и фильтрацией загруженной страницы по имени, алиасу или ID. Точный ID открывает кампанию через отдельный запрос в Keitaro.</li>
-    <li>В редакторе видны все потоки. Привязки можно редактировать в потоках со схемой <code>landings</code>. Над списком расположены обновление из Keitaro, ссылка в админку, каталог офферов и история.</li>
+    <li>Редактор показывает потоки со схемой <code>landings</code>, в том числе пустые. В такой поток можно добавить первый оффер. Над списком расположены обновление из Keitaro, ссылка в админку, каталог офферов и история.</li>
     <li>Оффер выбирают в раскрывающемся списке с поиском по ID. Привязанные записи помечены зелёным статусом «Назначен». Открепление подтверждается в диалоге. Затем строка уходит в конец списка с долей 0% и действием «Вернуть».</li>
     <li>Добавление, открепление, возврат и снятие закрепления пересчитывают доли. Закреплённые доли сохраняются. Целочисленный остаток распределяется по порядку. Для активных офферов с корректным составом сумма долей равна 100%.</li>
     <li>Черновик выделен цветом. Его можно сбросить или опубликовать. После успешной публикации изменения попадают в журнал кампании. Таблица истории поддерживает фильтры, сортировку по времени и курсорную пагинацию.</li>
@@ -155,7 +155,7 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
     <li><div><code>pages/campaign-list/ui/campaign-list-page.tsx</code>, <code>campaign-table.tsx</code></div><span>Список и таблица кампаний, поиск и переход по ID.</span></li>
     <li><div><code>pages/campaign-list/model/campaign-list-slice.ts</code>, <code>use-campaign-list.ts</code></div><span>Состояние поиска и страницы, получение списка и навигация.</span></li>
     <li><div><code>pages/campaign-streams/ui/campaign-streams-page.tsx</code>, <code>campaign-link.tsx</code>, <code>offer-catalog.tsx</code></div><span>Экран потоков, ссылка кампании и каталог.</span></li>
-    <li><div><code>pages/campaign-streams/model/use-campaign-streams.ts</code></div><span>Загрузка потоков и запрет повторной сверки во время операции.</span></li>
+    <li><div><code>pages/campaign-streams/model/use-campaign-streams.ts</code></div><span>Загрузка потоков, отбор редактируемых карточек и запрет повторной сверки во время операции.</span></li>
     <li><div><code>pages/campaign-history/ui/campaign-history-page.tsx</code>, <code>history-table.tsx</code>, <code>history-filters-form.tsx</code></div><span>Журнал, таблица и фильтры.</span></li>
     <li><div><code>pages/campaign-history/model/campaign-history-slice.ts</code>, <code>use-campaign-history.ts</code></div><span>Фильтры, сортировка и курсоры отдельно для каждой кампании.</span></li>
     <li><div><code>pages/overview/ui/overview-page.tsx</code>, <code>pages/not-found/ui/not-found-page.tsx</code></div><span>Состояние сервиса и неизвестный адрес.</span></li>
