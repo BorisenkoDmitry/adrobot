@@ -1,0 +1,96 @@
+name: adrobot
+
+x-backend: &backend
+  image: adrobot-backend:local
+  build: ./backend
+  environment: &backend-env
+    POSTGRES_HOST: db
+    POSTGRES_PORT: 5432
+    POSTGRES_DB: ${POSTGRES_DB:-adrobot}
+    POSTGRES_USER: ${POSTGRES_USER:-adrobot}
+    POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adrobot-local}
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-adrobot}
+      POSTGRES_USER: ${POSTGRES_USER:-adrobot}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-adrobot-local}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}"']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  migrate:
+    <<: *backend
+    command: [alembic, upgrade, head]
+    depends_on:
+      db:
+        condition: service_healthy
+
+  api:
+    <<: *backend
+    environment:
+      <<: *backend-env
+      KEITARO_BASE_URL: ${KEITARO_BASE_URL:-}
+      KEITARO_API_KEY: ${KEITARO_API_KEY:-}
+    ports:
+      - "127.0.0.1:${API_PORT:-8000}:8000"
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: [CMD, python, -c, "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/api/v1/health/ready', timeout=3).close()"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
+
+  web:
+    build: ./frontend
+    ports:
+      - "127.0.0.1:${WEB_PORT:-5173}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+        restart: true
+    healthcheck:
+      test: [CMD, wget, -q, -O, /dev/null, "http://127.0.0.1/api/v1/health/ready"]
+      interval: 5s
+      timeout: 4s
+      retries: 10
+
+  test-db:
+    profiles: [test]
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: adrobot_test
+      POSTGRES_USER: adrobot
+      POSTGRES_PASSWORD: adrobot-test
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, 'pg_isready -h 127.0.0.1 -U adrobot -d adrobot_test']
+      interval: 3s
+      timeout: 3s
+      retries: 15
+
+  tests:
+    profiles: [test]
+    build:
+      context: ./backend
+      target: testing
+    environment:
+      POSTGRES_HOST: test-db
+      POSTGRES_DB: adrobot_test
+      POSTGRES_USER: adrobot
+      POSTGRES_PASSWORD: adrobot-test
+    depends_on:
+      test-db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

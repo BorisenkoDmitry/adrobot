@@ -1,0 +1,187 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Adrobot · Технический отчёт</title>
+<style>
+:root{color-scheme:light;--paper:#fff;--page:#f8f9f3;--ink:#252a21;--muted:#586050;--line:#dce2d5;--accent:#425820;--soft:#e7efd4}
+*{box-sizing:border-box}body{margin:0;background:#e9ece2;color:var(--ink);font:15px/1.55 "Segoe UI",system-ui,sans-serif}
+main{max-width:72rem;margin:1rem auto;padding:clamp(1rem,4vw,3rem);background:var(--page);border:1px solid var(--line);border-radius:1.2rem}
+header{padding-bottom:1.35rem;border-bottom:1px solid var(--line)}header p{max-width:67ch}h1,h2,h3{margin:0;line-height:1.12}
+h1{font-size:clamp(2.6rem,7vw,4.5rem);letter-spacing:-.065em}h2{font-size:clamp(1.55rem,3vw,2.1rem);letter-spacing:-.032em;margin-bottom:.9rem}
+h3{font-size:1.14rem;margin:.85rem 0 .45rem}p{margin:.46rem 0 .75rem}.meta,small,dd{color:var(--muted)}
+a{color:#3e5519;text-underline-offset:.17em}nav{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:.9rem}
+nav a{padding:.22rem .6rem;border-radius:.43rem;background:var(--soft);font-size:.88rem}a:focus-visible,summary:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+section{margin-top:2.65rem;scroll-margin-top:1rem}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,20rem),1fr));gap:.6rem}
+.surface,details{border:1px solid var(--line);background:var(--paper);border-radius:.7rem;padding:.75rem .9rem}
+.flow{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,11rem),1fr));gap:.5rem;margin:.9rem 0;padding:0;list-style:none}.flow small{display:block}
+.callout{padding:.65rem .85rem;border-inline-start:3px solid var(--accent);background:var(--soft);border-radius:.4rem}
+.table-wrap{overflow:auto;margin:.65rem 0 1.1rem;border:1px solid var(--line);border-radius:.62rem}
+table{border-collapse:collapse;width:100%;min-width:36rem;background:var(--paper)}th,td{padding:.54rem .7rem;text-align:start;vertical-align:top;border-bottom:1px solid var(--line)}
+thead th{background:#edf1e7;font-size:.86rem}tbody tr:last-child td{border-bottom:0}code,pre{font-family:Consolas,ui-monospace,monospace;overflow-wrap:anywhere}
+pre{padding:.75rem .9rem;background:#edf1e7;border-radius:.5rem;white-space:pre-wrap}dl{margin:.5rem 0 .15rem}dt{margin-top:.53rem;font-weight:650}dd{margin:0}
+ol,ul{padding-inline-start:1.35rem}li+li{margin-top:.25rem}.flow li+li{margin:0}
+details{margin:.55rem 0}summary{cursor:pointer;font-weight:700}.files{margin:.55rem 0 0;padding:0;list-style:none}
+.files li{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:.6rem;padding:.31rem 0;border-top:1px solid var(--line)}.files li+li{margin:0}
+footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
+@media(max-width:42rem){main{margin:0;border-radius:0}.files li{grid-template-columns:1fr;gap:.1rem}}
+@media print{main,body{background:#fff;margin:0;padding:0;border:0}nav{display:none}.table-wrap{overflow:visible}table{min-width:0}tr,.surface,.files li{break-inside:avoid}h2,h3,summary{break-after:avoid}}
+</style>
+</head>
+<body>
+<main>
+<header>
+  <p class="meta">Технический отчёт · 19 ноября 2026</p>
+  <h1>Adrobot</h1>
+  <p>Редактор существующих кампаний Keitaro. Документ описывает пользовательские сценарии, модель PostgreSQL, запросы и расположение кода.</p>
+  <nav aria-label="Оглавление">
+    <a href="#scope">Что сделано</a><a href="#storage">Таблицы и связи</a><a href="#api">API</a>
+    <a href="#backend">Карта бэкенда</a><a href="#frontend">Карта фронтенда</a><a href="#run">Запуск и проверка</a>
+  </nav>
+</header>
+<section id="scope">
+  <h2>Что сделано</h2>
+  <ul class="flow" aria-label="Компоненты приложения">
+    <li class="surface"><strong>React</strong><small>Кампании, потоки и журнал</small></li>
+    <li class="surface"><strong>Nginx → FastAPI</strong><small>API, проверка запросов и операции редактора</small></li>
+    <li class="surface"><strong>PostgreSQL</strong><small>Черновики, снимки, архив и журнал</small></li>
+    <li class="surface"><strong>Keitaro</strong><small>Кампании, потоки, каталог и опубликованные доли</small></li>
+  </ul>
+  <ol>
+    <li>Список кампаний с пагинацией и фильтрацией загруженной страницы по имени, алиасу или ID. Точный ID открывает кампанию через отдельный запрос в Keitaro.</li>
+    <li>В редакторе видны все потоки. Привязки можно редактировать в потоках со схемой <code>landings</code>. Над списком расположены обновление из Keitaro, ссылка в админку, каталог офферов и история.</li>
+    <li>Оффер выбирают в раскрывающемся списке с поиском по ID. Привязанные записи помечены зелёным статусом «Назначен». Открепление подтверждается в диалоге. Затем строка уходит в конец списка с долей 0% и действием «Вернуть».</li>
+    <li>Добавление, открепление, возврат и снятие закрепления пересчитывают доли. Закреплённые доли сохраняются. Целочисленный остаток распределяется по порядку. Для активных офферов с корректным составом сумма долей равна 100%.</li>
+    <li>Черновик выделен цветом. Его можно сбросить или опубликовать. После успешной публикации изменения попадают в журнал кампании. Таблица истории поддерживает фильтры, сортировку по времени и курсорную пагинацию.</li>
+    <li>Интерфейс использует Manrope и Golos Text, светлую и тёмную темы. Разделы организованы по FSD, состояние экранов хранится в Redux Toolkit, ответы API кеширует TanStack Query.</li>
+  </ol>
+  <p class="callout"><strong>Зачем история.</strong> Журнал показывает, когда менялись офферы и доли. Время этих событий можно сопоставить с кликами из отчётов Keitaro. Записи появляются с новых подтверждённых публикаций через Adrobot.</p>
+</section>
+<section id="storage">
+  <h2>Таблицы и связи</h2>
+  <div class="grid">
+    <article class="surface">
+      <h3><code>stream_edits</code></h3>
+      <p>Одна запись на поток кампании.</p>
+      <dl>
+        <dt><code>campaign_id</code>, <code>stream_id</code> · integer</dt><dd>Составной первичный ключ из идентификаторов Keitaro.</dd>
+        <dt><code>published</code> · jsonb</dt><dd>Сохранённый состав с именами, долями, закреплениями и архивными записями.</dd>
+        <dt><code>remote_offers</code> · jsonb</dt><dd>Нормализованный снимок Keitaro для обнаружения конфликтов.</dd>
+        <dt><code>draft</code> · jsonb, nullable</dt><dd>Изменения до публикации. <code>NULL</code> означает отсутствие черновика.</dd>
+        <dt><code>revision</code> · integer</dt><dd>Текущая версия. Действие со старой версией получает <code>409</code>.</dd>
+        <dt><code>conflicted</code> · boolean</dt><dd>Признак расхождения с актуальным составом Keitaro.</dd>
+      </dl>
+    </article>
+    <article class="surface">
+      <h3><code>stream_publications</code></h3>
+      <p>Одна запись на подтверждённую публикацию с изменениями.</p>
+      <dl>
+        <dt><code>id</code> · bigint identity</dt><dd>Первичный ключ и курсор пагинации.</dd>
+        <dt><code>campaign_id</code>, <code>stream_id</code> · integer</dt><dd>Идентификаторы кампании и потока из Keitaro.</dd>
+        <dt><code>stream_name</code> · text</dt><dd>Название потока на момент публикации.</dd>
+        <dt><code>published_at</code> · timestamptz</dt><dd>Время записи подтверждённого изменения.</dd>
+        <dt><code>changes</code> · jsonb</dt><dd>Изменённые офферы. Для каждого записаны ID, имя, действия и состояния <code>before</code>/<code>after</code> с долей и закреплением.</dd>
+      </dl>
+    </article>
+  </div>
+  <p class="callout"><strong>Связь 1:N.</strong> Запись редактора и записи журнала связаны логически по паре <code>(campaign_id, stream_id)</code>. Внешнего ключа между таблицами нет. Составной индекс <code>ix_stream_publications_campaign_id_id</code> поддерживает выборку по кампании и переход по курсору <code>id</code> в обе стороны.</p>
+  <p>Каталоги кампаний и офферов живут в Keitaro. В PostgreSQL также есть служебная таблица <code>alembic_version</code>. Транзакционная блокировка PostgreSQL упорядочивает операции редактора в рамках кампании. Публикация в Keitaro подтверждается повторным чтением. Если ответ на запись потерялся, сервис сравнивает фактический состав с ожидаемым.</p>
+</section>
+<section id="api">
+  <h2>API и назначение запросов</h2>
+  <h3>Adrobot · <code>/api/v1</code></h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Запрос</th><th scope="col">За что отвечает</th></tr></thead>
+    <tbody>
+    <tr><td><code>GET /campaigns</code></td><td>Страница кампаний. Принимает <code>limit</code> (50 по умолчанию, максимум 100) и <code>offset</code>.</td></tr>
+    <tr><td><code>GET /campaigns/{campaign_id}</code></td><td>Открывает кампанию по ID и возвращает ссылку в админку Keitaro.</td></tr>
+    <tr><td><code>GET /offers</code></td><td>Каталог Keitaro для селекта и окна «Все офферы».</td></tr>
+    <tr><td><code>GET /offers/{offer_id}</code></td><td>Один оффер по ID.</td></tr>
+    <tr><td><code>GET /campaigns/{campaign_id}/streams</code></td><td>Загружает потоки и сверяет их с PostgreSQL. Возвращает состав, состояние и версию каждого потока.</td></tr>
+    <tr><td><code>POST …/streams/{stream_id}/draft</code></td><td>Принимает <code>revision</code>, <code>offer_id</code> и действие <code>add</code>, <code>remove</code>, <code>restore</code> или <code>toggle_pin</code>. Сохраняет черновик.</td></tr>
+    <tr><td><code>POST …/streams/{stream_id}/cancel</code></td><td>Принимает <code>revision</code>, сбрасывает черновик и получает актуальное состояние Keitaro.</td></tr>
+    <tr><td><code>POST …/streams/{stream_id}/publish</code></td><td>Принимает <code>revision</code>, публикует и проверяет состав, фиксирует изменение в журнале.</td></tr>
+    <tr><td><code>GET /campaigns/{campaign_id}/history</code></td><td>История и <code>next_cursor</code>. Фильтры <code>stream</code>, <code>offer</code>, <code>action</code>, <code>from_date</code>, <code>until_date</code>. Порядок задаётся <code>descending</code>, страницы — <code>limit</code> и <code>cursor</code>.</td></tr>
+    <tr><td><code>GET /health/live</code></td><td>Проверка процесса FastAPI.</td></tr>
+    <tr><td><code>GET /health/ready</code></td><td>Проверка соединения с PostgreSQL.</td></tr>
+    </tbody>
+  </table></div>
+  <p class="meta">Многоточие означает префикс <code>/campaigns/{campaign_id}</code>. Конфликты версий и данных возвращают <code>409</code>, нарушения правил редактирования и формата — <code>422</code>.</p>
+  <h3>Keitaro · <code>/admin_api/v1</code></h3>
+  <div class="table-wrap"><table>
+    <thead><tr><th scope="col">Запрос</th><th scope="col">За что отвечает</th></tr></thead>
+    <tbody>
+    <tr><td><code>GET /campaigns</code>, <code>GET /campaigns/{id}</code></td><td>Список и карточка. При чтении истории карточка подтверждает доступ и даёт текущее имя кампании.</td></tr>
+    <tr><td><code>GET /campaigns/{id}/streams</code></td><td>Список потоков и привязок для сверки.</td></tr>
+    <tr><td><code>GET /offers</code>, <code>GET /offers/{id}</code></td><td>Каталог, имена и проверка статуса оффера при добавлении или возврате.</td></tr>
+    <tr><td><code>GET /streams/{id}</code></td><td>Текущий состав перед операцией и проверка результата записи.</td></tr>
+    <tr><td><code>PUT /streams/{id}</code></td><td>Записывает полный состав с <code>offer_id</code>, <code>share</code> и <code>state</code>. Откреплённые записи исключаются.</td></tr>
+    </tbody>
+  </table></div>
+  <p>Пример публикации с условным ID. <code>share</code> передаётся целым процентом.</p>
+  <pre><code>{"schema":"landings","offers":[{"offer_id":123,"share":100,"state":"active"}]}</code></pre>
+  <p class="meta">Заголовок <code>Api-Key</code> добавляет только FastAPI. Клиент Keitaro проверяет формат ответа, обрабатывает ошибки доступа, таймауты и лимиты. При сетевой ошибке запрос чтения повторяется один раз.</p>
+</section>
+<section id="backend">
+  <h2>Карта файлов бэкенда</h2>
+  <p class="meta">Пути от <code>backend/</code>.</p>
+  <details open><summary>Запуск, маршруты и интеграции</summary><ul class="files">
+    <li><div><code>app/main.py</code></div><span>Инициализация FastAPI, клиента Keitaro и SQLAlchemy. Обработчики ошибок.</span></li>
+    <li><div><code>app/core/config.py</code>, <code>app/api/dependencies.py</code></div><span>Окружение, проверка URL, зависимости маршрутов.</span></li>
+    <li><div><code>app/api/v1/router.py</code></div><span>Сборка API под префиксом <code>/api/v1</code>.</span></li>
+    <li><div><code>app/api/v1/campaigns.py</code>, <code>editor.py</code>, <code>health.py</code></div><span>Кампании, офферы и история, команды редактора, проверки доступности.</span></li>
+    <li><div><code>app/keitaro/client.py</code>, <code>schemas.py</code></div><span>Интеграция с Admin API, разбор ответов и обработка сбоев.</span></li>
+  </ul></details>
+  <details open><summary>Редактор, PostgreSQL и тесты</summary><ul class="files">
+    <li><div><code>app/modules/editor/domain.py</code></div><span>Правила расчёта долей, закрепления и архива.</span></li>
+    <li><div><code>app/modules/editor/service.py</code></div><span>Сверка, черновики, отмена, публикация и проверка версии.</span></li>
+    <li><div><code>app/modules/editor/history.py</code></div><span>Разница между состояниями, запись журнала, фильтры и курсор.</span></li>
+    <li><div><code>app/modules/editor/model.py</code>, <code>schemas.py</code></div><span>Модели таблиц, запросы и ответы редактора.</span></li>
+    <li><div><code>app/db/base.py</code>, <code>models.py</code>, <code>session.py</code></div><span>Метаданные SQLAlchemy и сессия на запрос.</span></li>
+    <li><div><code>migrations/env.py</code>, <code>script.py.mako</code>, <code>alembic.ini</code></div><span>Конфигурация и шаблон миграций.</span></li>
+    <li><div><code>migrations/versions/0001_baseline.py</code>, <code>0002_stream_edits.py</code>, <code>0003_stream_publications.py</code></div><span>Начальная ревизия, редактор, журнал и индекс.</span></li>
+    <li><div><code>tests/test_api.py</code></div><span>Интеграционные сценарии на отдельной PostgreSQL с тестовым HTTP-транспортом.</span></li>
+    <li><div><code>Dockerfile</code>, <code>pyproject.toml</code>, <code>uv.lock</code></div><span>Образы, инструменты и фиксированные зависимости.</span></li>
+  </ul></details>
+</section>
+<section id="frontend">
+  <h2>Карта файлов фронтенда</h2>
+  <p class="meta">Пути от <code>frontend/src/</code>. Срезы экспортируют публичные точки входа через <code>index.ts</code>.</p>
+  <details open><summary>Приложение и страницы</summary><ul class="files">
+    <li><div><code>main.tsx</code>, <code>app/ui/app.tsx</code>, <code>app/ui/root-layout.tsx</code></div><span>Вход React, шрифты, провайдеры, навигация и тема.</span></li>
+    <li><div><code>app/providers/router.tsx</code>, <code>query-client.ts</code></div><span>Маршруты и конфигурация TanStack Query.</span></li>
+    <li><div><code>app/model/store.ts</code>, <code>preferences.ts</code>, <code>app/styles/index.css</code></div><span>Redux store через <code>combineSlices</code>, тема и общие стили.</span></li>
+    <li><div><code>pages/campaign-list/ui/campaign-list-page.tsx</code>, <code>campaign-table.tsx</code></div><span>Список и таблица кампаний, поиск и переход по ID.</span></li>
+    <li><div><code>pages/campaign-list/model/campaign-list-slice.ts</code>, <code>use-campaign-list.ts</code></div><span>Состояние поиска и страницы, получение списка и навигация.</span></li>
+    <li><div><code>pages/campaign-streams/ui/campaign-streams-page.tsx</code>, <code>campaign-link.tsx</code>, <code>offer-catalog.tsx</code></div><span>Экран потоков, ссылка кампании и каталог.</span></li>
+    <li><div><code>pages/campaign-streams/model/use-campaign-streams.ts</code></div><span>Загрузка потоков и запрет повторной сверки во время операции.</span></li>
+    <li><div><code>pages/campaign-history/ui/campaign-history-page.tsx</code>, <code>history-table.tsx</code>, <code>history-filters-form.tsx</code></div><span>Журнал, таблица и фильтры.</span></li>
+    <li><div><code>pages/campaign-history/model/campaign-history-slice.ts</code>, <code>use-campaign-history.ts</code></div><span>Фильтры, сортировка и курсоры отдельно для каждой кампании.</span></li>
+    <li><div><code>pages/overview/ui/overview-page.tsx</code>, <code>pages/not-found/ui/not-found-page.tsx</code></div><span>Состояние сервиса и неизвестный адрес.</span></li>
+  </ul></details>
+  <details open><summary>Функции, сущности и общие компоненты</summary><ul class="files">
+    <li><div><code>features/edit-stream-offers/model/use-stream-editor.ts</code></div><span>Мутации редактора, подтверждение открепления, обновление кеша.</span></li>
+    <li><div><code>features/edit-stream-offers/ui/stream-editor.tsx</code>, <code>add-stream-offer.tsx</code>, <code>stream-offers.tsx</code></div><span>Карточка потока, действия с черновиком и офферами.</span></li>
+    <li><div><code>entities/campaign/api/campaigns.ts</code></div><span>Модель кампании и запросы списка и карточки.</span></li>
+    <li><div><code>entities/stream/api/streams.ts</code>, <code>history.ts</code></div><span>Модели потока и истории, ключи кеша, запросы и команды.</span></li>
+    <li><div><code>entities/offer/api/offers.ts</code>, <code>model/use-offer-select.ts</code>, <code>ui/offer-select.tsx</code></div><span>Каталог, поиск по ID и клавиатурное управление селектом.</span></li>
+    <li><div><code>shared/api/http.ts</code>, <code>health.ts</code></div><span>HTTP-клиент, общие ошибки и запрос готовности.</span></li>
+    <li><div><code>shared/ui/button.tsx</code>, <code>dialog.tsx</code>, <code>data-table.tsx</code>, <code>state.tsx</code></div><span>Кнопки, диалог, таблица, пагинация и состояния загрузки или ошибки.</span></li>
+    <li><div><code>shared/lib/id.ts</code>, <code>utils.ts</code></div><span>Проверка ID и объединение CSS-классов.</span></li>
+  </ul></details>
+  <p class="meta">В <code>frontend/</code> также находятся <code>package.json</code>, lock-файл, конфигурации Vite, TypeScript и ESLint, <code>index.html</code>, <code>Dockerfile</code> и <code>nginx.conf</code>.</p>
+</section>
+<section id="run">
+  <h2>Запуск и проверка</h2>
+  <p>Создайте локальный <code>.env</code> по образцу <code>.env.example</code> и укажите адрес и ключ Keitaro. Сервис <code>migrate</code> применяет Alembic до запуска API. Nginx отдаёт фронтенд и проксирует <code>/api/</code>.</p>
+  <pre><code>docker compose up --build -d --wait
+docker compose exec api alembic current
+docker compose --profile test run --rm --build tests</code></pre>
+  <p><a href="http://localhost:5173/campaigns">Кампании</a> · <a href="http://localhost:8000/docs">Swagger</a> · <a href="http://localhost:5173/api/v1/health/ready">Готовность</a> · <a href="https://admin-api.docs.keitaro.io/">Keitaro Admin API</a></p>
+  <p>Рабочий Docker Compose обращается к реальному Keitaro. Интеграционные тесты используют отдельную БД. Они проверяют сверку, ошибки и подтверждение публикации, черновики, параллельные правки, расчёт долей, фильтрацию и пагинацию истории.</p>
+</section>
+<footer class="meta">Adrobot · Модель данных, API и карта проекта</footer>
+</main>
+</body>
+</html>
