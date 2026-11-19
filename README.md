@@ -20,6 +20,7 @@ Copy-Item .env.example .env
 | --- | --- |
 | `KEITARO_BASE_URL` | HTTPS-адрес трекера без `/admin` и пути API |
 | `KEITARO_API_KEY` | Ключ из «Профиль → API ключи» с доступом к нужным кампаниям, потокам и офферам |
+| `KEITARO_KEY_ENCRYPTION_KEY` | Серверный ключ Fernet для хранения ключа API в PostgreSQL |
 | `WEB_PORT`, `API_PORT` | Локальные порты, по умолчанию 5173 и 8000 |
 
 ```powershell
@@ -35,11 +36,20 @@ Compose дожидается PostgreSQL, применяет миграции Ale
 
 Ключ Keitaro использует FastAPI. Локальные `.env` и `compose.override.yaml` исключены из Git. На Linux для копирования образца настроек можно использовать `cp .env.example .env`.
 
+Чтобы включить сохранение ключа из интерфейса, добавьте в `.env` отдельный ключ Fernet. Его можно сгенерировать командой:
+
+```powershell
+python -c "import base64, secrets; print(base64.urlsafe_b64encode(secrets.token_bytes(32)).decode())"
+```
+
+На странице «Состояние сервиса» можно проверить введённый ключ и сохранить его. Сохранённый ключ применяется ко всем запросам данного экземпляра. До сохранения действует `KEITARO_API_KEY` из `.env`. Ключ шифрования хранится в окружении сервера. Сохраните его для доступа к зашифрованной записи после перезапуска.
+
 ## Миграции PostgreSQL
 
 - `0001_baseline` — начальная ревизия Alembic.
 - `0002_stream_edits` — черновики, версии, закрепления и архивы потока.
 - `0003_stream_publications` — журнал публикаций и составной индекс `(campaign_id, id)` для чтения истории по курсору.
+- `0004_keitaro_credentials` — зашифрованный ключ API Keitaro.
 
 Для установки и обновления используйте `docker compose up --build -d --wait`. Текущую ревизию можно проверить командой `docker compose exec api alembic current`.
 

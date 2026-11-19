@@ -2,6 +2,8 @@ import { GitFork, LoaderCircle, Upload, X } from 'lucide-react'
 import { useId } from 'react'
 
 import type { Stream } from '@/entities/stream'
+import { useI18n } from '@/shared/i18n'
+import type { MessageKey } from '@/shared/i18n'
 import { cn } from '@/shared/lib/utils'
 import { Button } from '@/shared/ui/button'
 import { Dialog } from '@/shared/ui/dialog'
@@ -11,12 +13,16 @@ import { useStreamEditor } from '../model/use-stream-editor'
 import { AddStreamOffer } from './add-stream-offer'
 import { StreamOffers } from './stream-offers'
 
-const TYPE_NAMES: Record<string, string> = { regular: 'Обычный', forced: 'Перехватывающий', default: 'Замыкающий' }
+const TYPE_NAMES: Record<string, MessageKey | undefined> = {
+  regular: 'stream.regular', forced: 'stream.forced', default: 'stream.default',
+}
 
 export function StreamEditor({ stream, refreshing }: { stream: Stream; refreshing: boolean }) {
+  const { t } = useI18n()
   const titleId = useId()
   const editor = useStreamEditor(stream, refreshing)
   const { blocked, working, offerToDetach } = editor
+  const streamType = TYPE_NAMES[stream.type]
 
   return (
     <section className={cn('workspace-panel stream-panel', stream.conflicted ? 'stream-conflict' : stream.dirty && 'stream-dirty')}
@@ -25,14 +31,14 @@ export function StreamEditor({ stream, refreshing }: { stream: Stream; refreshin
         <span className="stream-icon"><GitFork aria-hidden="true" /></span>
         <div className="min-w-0">
           <h3 id={titleId}>{stream.name}</h3>
-          <p>#{stream.id} <span aria-hidden="true">·</span> {TYPE_NAMES[stream.type] ?? stream.type}
-            {stream.editable && <> <span aria-hidden="true">·</span> Офферы: {editor.attached.length}</>}</p>
+          <p>#{stream.id} <span aria-hidden="true">·</span> {streamType ? t(streamType) : stream.type}
+            {stream.editable && <> <span aria-hidden="true">·</span> {t('stream.offerCount', { count: editor.attached.length })}</>}</p>
         </div>
         {stream.editable ? (
           <span className={cn('status-pill stream-state', stream.conflicted ? 'status-conflict' : stream.dirty ? 'status-draft' : 'status-active')}>
-            <span aria-hidden="true" />{stream.conflicted ? 'Конфликт' : stream.dirty ? 'Черновик' : 'Опубликован'}
+            <span aria-hidden="true" />{t(stream.conflicted ? 'stream.conflict' : stream.dirty ? 'stream.draft' : 'stream.published')}
           </span>
-        ) : <span className="status-pill stream-state">{stream.schema === 'redirect' ? 'Редирект' : 'Без редактора офферов'}</span>}
+        ) : <span className="status-pill stream-state">{t(stream.schema === 'redirect' ? 'stream.redirect' : 'stream.readOnly')}</span>}
       </header>
       {stream.editable && (
         <>
@@ -42,16 +48,16 @@ export function StreamEditor({ stream, refreshing }: { stream: Stream; refreshin
                 {editor.publishing
                   ? <LoaderCircle className="animate-spin" aria-hidden="true" />
                   : <Upload aria-hidden="true" />}
-                Отправить в Keitaro
+                {t('stream.publish')}
               </Button>
               <Button variant="outline" disabled={working} onClick={editor.cancel}>
-                <X aria-hidden="true" />Отменить правки
+                <X aria-hidden="true" />{t('stream.discard')}
               </Button>
-              {stream.conflicted && <p>Поток изменился в Keitaro. Отмени черновик, чтобы загрузить актуальную версию.</p>}
+              {stream.conflicted && <p>{t('stream.conflictHelp')}</p>}
             </div>
           )}
           {editor.error && <div className="panel-padding"><ErrorState error={editor.error} /></div>}
-          {editor.notice && <p className="stream-notice" role="status">{editor.notice}</p>}
+          {editor.notice && <p className="stream-notice" role="status">{t(editor.notice)}</p>}
         </>
       )}
       <StreamOffers offers={editor.offers} editable={stream.editable} blocked={blocked}
@@ -59,15 +65,15 @@ export function StreamEditor({ stream, refreshing }: { stream: Stream; refreshin
       {stream.editable && (
         <>
           <AddStreamOffer attached={editor.attached} disabled={blocked} onAdd={editor.addOffer} />
-          <Dialog open={offerToDetach !== null} title="Открепить оффер от потока?" onDismiss={() => editor.setDetachingOffer(null)}>
+          <Dialog open={offerToDetach !== null} title={t('stream.detachTitle')} onDismiss={() => editor.setDetachingOffer(null)}>
             {offerToDetach && (
               <>
-                <p><strong>{offerToDetach.name}</strong> (#{offerToDetach.offer_id}) будет откреплён от потока «{stream.name}».
-                  Изменение вступит в силу после отправки в Keitaro.</p>
+                <p><strong>{offerToDetach.name}</strong>{' '}
+                  {t('stream.detachDescription', { id: offerToDetach.offer_id, stream: stream.name })}</p>
                 <div className="editor-dialog-actions">
-                  <Button variant="outline" onClick={() => editor.setDetachingOffer(null)}>Отмена</Button>
+                  <Button variant="outline" onClick={() => editor.setDetachingOffer(null)}>{t('common.cancel')}</Button>
                   <Button variant="outline" className="stream-offer-detach" disabled={blocked} onClick={editor.confirmDetach}>
-                    Открепить
+                    {t('offer.detach')}
                   </Button>
                 </div>
               </>

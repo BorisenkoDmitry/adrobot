@@ -6,6 +6,7 @@ import { useNavigate } from 'react-router'
 import { campaignsQuery } from '@/entities/campaign'
 import type { Campaign } from '@/entities/campaign'
 import { parseRecordId } from '@/shared/lib/id'
+import { useDebounce } from '@/shared/lib/use-debounce'
 
 import { campaignListSlice } from './campaign-list-slice'
 
@@ -19,7 +20,8 @@ export function useCampaignList() {
   const result = useQuery(campaignsQuery(view.page * PAGE_SIZE, PAGE_SIZE))
   const campaigns = result.data ?? EMPTY_CAMPAIGNS
   const lookupId = parseRecordId(view.lookup)
-  const search = view.search.trim().toLocaleLowerCase('ru-RU')
+  const debouncedSearch = useDebounce(view.search, 300)
+  const search = debouncedSearch.trim().toLocaleLowerCase('ru-RU')
   const visible = useMemo(() => search ? campaigns.filter((campaign) => (
     [campaign.name, campaign.alias, String(campaign.id)].some((value) => value.toLocaleLowerCase('ru-RU').includes(search))
   )) : campaigns, [campaigns, search])

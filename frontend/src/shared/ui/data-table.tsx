@@ -2,6 +2,7 @@ import { flexRender } from '@tanstack/react-table'
 import type { Table } from '@tanstack/react-table'
 import { ChevronDown, ChevronLeft, ChevronRight, ChevronsUpDown, ChevronUp } from 'lucide-react'
 
+import { useI18n } from '@/shared/i18n'
 import { cn } from '@/shared/lib/utils'
 
 import { Button } from './button'
@@ -49,14 +50,16 @@ export function TablePagination({ page, pending, hasNext, onPrevious, onNext }: 
   onPrevious: () => void
   onNext: () => void
 }) {
+  const { t } = useI18n()
+
   return (
-    <nav className="panel-footer" aria-label="Страницы таблицы">
-      <span aria-live="polite">{pending ? 'Загружаем…' : `Страница ${page + 1}`}</span>
+    <nav className="panel-footer" aria-label={t('table.navigation')}>
+      <span aria-live="polite">{pending ? t('common.loading') : t('table.page', { page: page + 1 })}</span>
       <div className="flex gap-2">
-        <Button variant="outline" size="icon" aria-label="Предыдущая страница" disabled={page === 0 || pending} onClick={onPrevious}>
+        <Button variant="outline" size="icon" aria-label={t('table.previous')} disabled={page === 0 || pending} onClick={onPrevious}>
           <ChevronLeft aria-hidden="true" />
         </Button>
-        <Button variant="outline" size="icon" aria-label="Следующая страница" disabled={!hasNext || pending} onClick={onNext}>
+        <Button variant="outline" size="icon" aria-label={t('table.next')} disabled={!hasNext || pending} onClick={onNext}>
           <ChevronRight aria-hidden="true" />
         </Button>
       </div>

@@ -1,6 +1,7 @@
 import { ChevronLeft, History } from 'lucide-react'
 import { Link, useParams } from 'react-router'
 
+import { useI18n } from '@/shared/i18n'
 import { parseRecordId } from '@/shared/lib/id'
 import { TablePagination } from '@/shared/ui/data-table'
 import { ErrorState, LoadingState } from '@/shared/ui/state'
@@ -10,6 +11,7 @@ import { HistoryFiltersForm } from './history-filters-form'
 import { HistoryTable } from './history-table'
 
 function CampaignHistory({ campaignId }: { campaignId: number }) {
+  const { t } = useI18n()
   const history = useCampaignHistory(campaignId)
   const { result } = history
 
@@ -17,25 +19,22 @@ function CampaignHistory({ campaignId }: { campaignId: number }) {
     <section className="work-page">
       <header className="page-heading">
         <div className="min-w-0">
-          <Link className="back-link" to={`/campaigns/${campaignId}`}><ChevronLeft aria-hidden="true" />К потокам</Link>
-          <h1>История изменений</h1>
-          <p>{result.data?.campaign_name ?? `Кампания #${campaignId}`}</p>
+          <Link className="back-link" to={`/campaigns/${campaignId}`}><ChevronLeft aria-hidden="true" />{t('history.back')}</Link>
+          <h1>{t('history.title')}</h1>
+          <p>{result.data?.campaign_name ?? t('campaign.single', { id: campaignId })}</p>
         </div>
       </header>
-      <p className="history-purpose">
-        История показывает, когда в потоках менялись офферы и доли. После каждой публикации через Adrobot здесь видно,
-        что изменилось. Сопоставь время публикации с отчётами Keitaro, чтобы понять, как изменилось число кликов.
-      </p>
+      <p className="history-purpose">{t('history.description')}</p>
       <div className="workspace-panel">
         <HistoryFiltersForm initialFilters={history.filters} pending={result.isFetching} onApply={history.applyFilters} />
-        {result.isPending ? <LoadingState>Загружаем историю…</LoadingState> : result.isError ? (
+        {result.isPending ? <LoadingState>{t('history.loading')}</LoadingState> : result.isError ? (
           <div className="panel-padding"><ErrorState error={result.error} onRetry={() => { void result.refetch() }} /></div>
         ) : history.entries.length ? (
           <HistoryTable entries={history.entries} busy={result.isFetching}
             descending={history.descending} onSort={history.setDescending} />
         ) : (
           <div className="section-state"><History aria-hidden="true" />
-            {history.hasFilters ? 'По этим фильтрам ничего не найдено.' : 'У кампании пока нет записей в истории.'}
+            {t(history.hasFilters ? 'history.noMatches' : 'history.empty')}
           </div>
         )}
         {(history.page > 0 || history.hasNext) && (
@@ -48,12 +47,13 @@ function CampaignHistory({ campaignId }: { campaignId: number }) {
 }
 
 export function CampaignHistoryPage() {
+  const { t } = useI18n()
   const { campaignId } = useParams()
   const id = parseRecordId(campaignId ?? '')
   return id === null ? (
     <section className="work-page">
-      <Link className="back-link" to="/campaigns"><ChevronLeft aria-hidden="true" />Кампании</Link>
-      <ErrorState error={new Error('У кампании должен быть числовой ID.')} />
+      <Link className="back-link" to="/campaigns"><ChevronLeft aria-hidden="true" />{t('nav.campaigns')}</Link>
+      <ErrorState error={new Error(t('campaign.invalidId'))} />
     </section>
   ) : <CampaignHistory key={id} campaignId={id} />
 }

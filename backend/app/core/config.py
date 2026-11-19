@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     keitaro_base_url: str = ""
     keitaro_api_key: SecretStr = SecretStr("")
+    keitaro_key_encryption_key: SecretStr = SecretStr("")
 
     @field_validator("keitaro_base_url")
     @classmethod

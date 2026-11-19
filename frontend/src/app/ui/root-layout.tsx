@@ -1,48 +1,59 @@
-import { Activity, GitFork, Layers3, Moon, Sun } from 'lucide-react'
+import { Activity, GitFork, Languages, Layers3, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 
+import { useI18n } from '@/shared/i18n'
 import { Button } from '@/shared/ui/button'
 
-import { themeStorageKey, toggleTheme } from '../model/preferences'
+import { localeChanged, localeStorageKey, themeStorageKey, toggleTheme } from '../model/preferences'
 import { useAppDispatch, useAppSelector } from '../model/store'
 
 export function RootLayout() {
   const theme = useAppSelector((state) => state.preferences.theme)
   const dispatch = useAppDispatch()
+  const { locale, t } = useI18n()
   const isDark = theme === 'dark'
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark', isDark)
     try {
       window.localStorage.setItem(themeStorageKey, theme)
+      window.localStorage.setItem(localeStorageKey, locale)
     } catch {
-      // The theme can still be switched for this session.
+      // Preferences still apply for the current session.
     }
-  }, [isDark, theme])
+  }, [isDark, locale, theme])
 
   return (
     <div className="app-shell">
-      <a className="skip-link" href="#main-content">К содержимому</a>
+      <a className="skip-link" href="#main-content">{t('nav.skip')}</a>
       <aside className="app-sidebar">
-        <Link to="/campaigns" className="brand-link" aria-label="Adrobot: кампании">
+        <Link to="/campaigns" className="brand-link" aria-label={t('nav.brand')}>
           <span className="brand-icon"><GitFork aria-hidden="true" /></span>
           <span className="brand-name"><strong>Adrobot</strong><small>Keitaro</small></span>
         </Link>
-        <nav className="app-nav" aria-label="Основное меню">
-          <NavLink to="/campaigns"><Layers3 aria-hidden="true" />Кампании</NavLink>
-          <NavLink to="/status"><Activity aria-hidden="true" />Состояние сервиса</NavLink>
+        <nav className="app-nav" aria-label={t('nav.main')}>
+          <NavLink to="/campaigns"><Layers3 aria-hidden="true" />{t('nav.campaigns')}</NavLink>
+          <NavLink to="/status"><Activity aria-hidden="true" />{t('nav.status')}</NavLink>
         </nav>
         <div className="sidebar-utilities">
           <Button
             variant="outline"
             className="theme-button w-full justify-start"
-            aria-label={isDark ? 'Включить светлую тему' : 'Включить тёмную тему'}
+            aria-label={t(isDark ? 'nav.switchLight' : 'nav.switchDark')}
             onClick={() => dispatch(toggleTheme())}
           >
             {isDark ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
-            <span className="theme-label">{isDark ? 'Светлая тема' : 'Тёмная тема'}</span>
+            <span className="theme-label">{t(isDark ? 'nav.light' : 'nav.dark')}</span>
           </Button>
+          <div className="sidebar-language">
+            <Languages aria-hidden="true" />
+            <select className="field" value={locale} aria-label={t('nav.language')}
+              onChange={(event) => dispatch(localeChanged(event.target.value === 'en' ? 'en' : 'ru'))}>
+              <option value="ru" lang="ru">Русский</option>
+              <option value="en" lang="en">English</option>
+            </select>
+          </div>
         </div>
       </aside>
       <main id="main-content" tabIndex={-1} className="app-main">

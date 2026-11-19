@@ -2,17 +2,9 @@ import { keepPreviousData, queryOptions } from '@tanstack/react-query'
 
 import { get } from '@/shared/api/http'
 
-export const historyActionLabels = {
-  added: 'Добавлен',
-  removed: 'Откреплён',
-  restored: 'Возвращён',
-  share: 'Изменилась доля',
-  pinned: 'Доля закреплена',
-  unpinned: 'Закрепление снято',
-  state: 'Изменился статус',
-} as const
+export const historyActions = ['added', 'removed', 'restored', 'share', 'pinned', 'unpinned', 'state'] as const
 
-export type HistoryAction = keyof typeof historyActionLabels
+export type HistoryAction = (typeof historyActions)[number]
 
 export type HistoryFilters = {
   stream: string

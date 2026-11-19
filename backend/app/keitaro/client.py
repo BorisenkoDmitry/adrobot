@@ -17,9 +17,12 @@ class KeitaroError(Exception):
 
 
 class KeitaroClient:
-    def __init__(self, http: httpx.AsyncClient, *, configured: bool = True) -> None:
+    def __init__(
+        self, http: httpx.AsyncClient, *, configured: bool = True, api_key: str | None = None
+    ) -> None:
         self.http = http
         self.configured = configured
+        self.api_key = api_key
 
     async def _request[T](
         self,
@@ -57,9 +60,12 @@ class KeitaroClient:
     async def _send(
         self, method: str, path: str, *, params: dict | None, body: dict | None
     ) -> httpx.Response:
+        headers = {"Api-Key": self.api_key} if self.api_key is not None else None
         for attempt in range(2 if method == "GET" else 1):
             try:
-                return await self.http.request(method, path, params=params, json=body)
+                return await self.http.request(
+                    method, path, params=params, json=body, headers=headers
+                )
             except httpx.RequestError as exc:
                 if method == "GET" and attempt == 0:
                     logger.info("Retrying read from Keitaro: %s", path)

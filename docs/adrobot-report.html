@@ -54,7 +54,8 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
     <li>Оффер выбирают в раскрывающемся списке с поиском по ID. Привязанные записи помечены зелёным статусом «Назначен». Открепление подтверждается в диалоге. Затем строка уходит в конец списка с долей 0% и действием «Вернуть».</li>
     <li>Добавление, открепление, возврат и снятие закрепления пересчитывают доли. Закреплённые доли сохраняются. Целочисленный остаток распределяется по порядку. Для активных офферов с корректным составом сумма долей равна 100%.</li>
     <li>Черновик выделен цветом. Его можно сбросить или опубликовать. После успешной публикации изменения попадают в журнал кампании. Таблица истории поддерживает фильтры, сортировку по времени и курсорную пагинацию.</li>
-    <li>Интерфейс использует Manrope и Golos Text, светлую и тёмную темы. Разделы организованы по FSD, состояние экранов хранится в Redux Toolkit, ответы API кеширует TanStack Query.</li>
+    <li>Интерфейс использует Manrope и Golos Text, светлую и тёмную темы, русский и английский языки. Разделы организованы по FSD, состояния экранов хранит Redux Toolkit, ответы API кеширует TanStack Query.</li>
+    <li>В «Состоянии сервиса» можно ввести, проверить и сохранить ключ Keitaro. Сохранённый ключ можно показать отдельно через глазик. Он используется всеми запросами этого экземпляра Adrobot.</li>
   </ol>
   <p class="callout"><strong>Зачем история.</strong> Журнал показывает, когда менялись офферы и доли. Время этих событий можно сопоставить с кликами из отчётов Keitaro. Записи появляются с новых подтверждённых публикаций через Adrobot.</p>
 </section>
@@ -71,6 +72,14 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
         <dt><code>draft</code> · jsonb, nullable</dt><dd>Изменения до публикации. <code>NULL</code> означает отсутствие черновика.</dd>
         <dt><code>revision</code> · integer</dt><dd>Текущая версия. Действие со старой версией получает <code>409</code>.</dd>
         <dt><code>conflicted</code> · boolean</dt><dd>Признак расхождения с актуальным составом Keitaro.</dd>
+      </dl>
+    </article>
+    <article class="surface">
+      <h3><code>keitaro_credentials</code></h3>
+      <p>Одна строка для экземпляра приложения. Миграция <code>0004_keitaro_credentials</code>.</p>
+      <dl>
+        <dt><code>id</code> · smallint</dt><dd>Первичный ключ с ограничением, которое допускает только значение 1.</dd>
+        <dt><code>encrypted_api_key</code> · text</dt><dd>Ключ Keitaro в виде токена Fernet. Материал шифрования находится в переменной окружения сервера. Связей с другими таблицами нет.</dd>
       </dl>
     </article>
     <article class="surface">
@@ -105,6 +114,10 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
     <tr><td><code>GET /campaigns/{campaign_id}/history</code></td><td>История и <code>next_cursor</code>. Фильтры <code>stream</code>, <code>offer</code>, <code>action</code>, <code>from_date</code>, <code>until_date</code>. Порядок задаётся <code>descending</code>, страницы — <code>limit</code> и <code>cursor</code>.</td></tr>
     <tr><td><code>GET /health/live</code></td><td>Проверка процесса FastAPI.</td></tr>
     <tr><td><code>GET /health/ready</code></td><td>Проверка соединения с PostgreSQL.</td></tr>
+    <tr><td><code>GET /settings/keitaro</code></td><td>Источник ключа и доступность зашифрованного сохранения.</td></tr>
+    <tr><td><code>PUT /settings/keitaro</code></td><td>Шифрует ключ и сохраняет его как основной.</td></tr>
+    <tr><td><code>POST /settings/keitaro/test</code></td><td>Проверяет введённый или текущий ключ запросом списка кампаний.</td></tr>
+    <tr><td><code>POST /settings/keitaro/reveal</code></td><td>Показывает оригинал ключа из таблицы по запросу из интерфейса. Ответ помечен <code>Cache-Control: no-store</code>.</td></tr>
     </tbody>
   </table></div>
   <p class="meta">Многоточие означает префикс <code>/campaigns/{campaign_id}</code>. Конфликты версий и данных возвращают <code>409</code>, нарушения правил редактирования и формата — <code>422</code>.</p>
@@ -132,6 +145,7 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
     <li><div><code>app/api/v1/router.py</code></div><span>Сборка API под префиксом <code>/api/v1</code>.</span></li>
     <li><div><code>app/api/v1/campaigns.py</code>, <code>editor.py</code>, <code>health.py</code></div><span>Кампании, офферы и история, команды редактора, проверки доступности.</span></li>
     <li><div><code>app/keitaro/client.py</code>, <code>schemas.py</code></div><span>Интеграция с Admin API, разбор ответов и обработка сбоев.</span></li>
+    <li><div><code>app/keitaro/credentials.py</code>, <code>app/api/v1/keitaro_settings.py</code></div><span>Модель ключа, шифрование и маршруты настроек.</span></li>
   </ul></details>
   <details open><summary>Редактор, PostgreSQL и тесты</summary><ul class="files">
     <li><div><code>app/modules/editor/domain.py</code></div><span>Правила расчёта долей, закрепления и архива.</span></li>
@@ -152,6 +166,7 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
     <li><div><code>main.tsx</code>, <code>app/ui/app.tsx</code>, <code>app/ui/root-layout.tsx</code></div><span>Вход React, шрифты, провайдеры, навигация и тема.</span></li>
     <li><div><code>app/providers/router.tsx</code>, <code>query-client.ts</code></div><span>Маршруты и конфигурация TanStack Query.</span></li>
     <li><div><code>app/model/store.ts</code>, <code>preferences.ts</code>, <code>app/styles/index.css</code></div><span>Redux store через <code>combineSlices</code>, тема и общие стили.</span></li>
+    <li><div><code>shared/i18n/</code></div><span>Словари русского и английского интерфейсов и React-провайдер локали.</span></li>
     <li><div><code>pages/campaign-list/ui/campaign-list-page.tsx</code>, <code>campaign-table.tsx</code></div><span>Список и таблица кампаний, поиск и переход по ID.</span></li>
     <li><div><code>pages/campaign-list/model/campaign-list-slice.ts</code>, <code>use-campaign-list.ts</code></div><span>Состояние поиска и страницы, получение списка и навигация.</span></li>
     <li><div><code>pages/campaign-streams/ui/campaign-streams-page.tsx</code>, <code>campaign-link.tsx</code>, <code>offer-catalog.tsx</code></div><span>Экран потоков, ссылка кампании и каталог.</span></li>
@@ -162,6 +177,7 @@ footer{margin-top:2rem;padding:.85rem 0 0;border-top:1px solid var(--line)}
   </ul></details>
   <details open><summary>Функции, сущности и общие компоненты</summary><ul class="files">
     <li><div><code>features/edit-stream-offers/model/use-stream-editor.ts</code></div><span>Мутации редактора, подтверждение открепления, обновление кеша.</span></li>
+    <li><div><code>features/manage-keitaro-key/</code></div><span>Форма ключа, проверка, сохранение и управление видимостью исходного значения.</span></li>
     <li><div><code>features/edit-stream-offers/ui/stream-editor.tsx</code>, <code>add-stream-offer.tsx</code>, <code>stream-offers.tsx</code></div><span>Карточка потока, действия с черновиком и офферами.</span></li>
     <li><div><code>entities/campaign/api/campaigns.ts</code></div><span>Модель кампании и запросы списка и карточки.</span></li>
     <li><div><code>entities/stream/api/streams.ts</code>, <code>history.ts</code></div><span>Модели потока и истории, ключи кеша, запросы и команды.</span></li>

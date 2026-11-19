@@ -1,3 +1,4 @@
+import asyncio
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -6,10 +7,14 @@ from uuid import uuid4
 
 import httpx
 import pytest
+from cryptography.fernet import Fernet
 from fastapi.testclient import TestClient
 from pydantic import SecretStr
+from sqlalchemy import delete, select
+from sqlalchemy.ext.asyncio import create_async_engine
 
 from app.core.config import Settings
+from app.keitaro.credentials import KeitaroCredential
 from app.main import create_app
 
 BASE = "/api/v1"
@@ -197,6 +202,59 @@ def by_id(state):
 
 def shares(state):
     return [offer["share"] for offer in state["offers"] if not offer["removed"]]
+
+
+def test_saved_tracker_key_is_encrypted_and_used_by_the_api(settings):
+    if os.environ.get("POSTGRES_DB") != "adrobot_test":
+        pytest.skip("Run PostgreSQL integration tests with the Compose test profile.")
+
+    key = "replacement-fixture-key"
+    encryption_key = Fernet.generate_key()
+    config = settings.model_copy(
+        update={"keitaro_key_encryption_key": SecretStr(encryption_key.decode("ascii"))}
+    )
+    used_keys = []
+    path = f"{BASE}/settings/keitaro"
+
+    def handle(request):
+        used_keys.append(request.headers["Api-Key"])
+        return httpx.Response(200, json=[])
+
+    async def database_ciphertext(*, cleanup=False):
+        engine = create_async_engine(config.database_url)
+        try:
+            async with engine.begin() as connection:
+                if cleanup:
+                    await connection.execute(delete(KeitaroCredential))
+                    return None
+                return await connection.scalar(select(KeitaroCredential.encrypted_api_key))
+        finally:
+            await engine.dispose()
+
+    try:
+        with TestClient(create_app(config, keitaro_transport=httpx.MockTransport(handle))) as api:
+            assert api.get(path).json()["source"] == "environment"
+            assert api.post(f"{path}/reveal").status_code == 404
+            assert api.post(f"{path}/test", json={"api_key": key}).json() == {"ok": True}
+            assert used_keys[-1] == key
+            assert api.get(path).json()["source"] == "environment"
+            invalid = api.put(path, json={"api_key": key, "invalid": True})
+            assert invalid.status_code == 422 and key not in invalid.text
+            assert api.put(path, json={"api_key": key}).json()["source"] == "saved"
+            assert key not in api.get(path).text
+            response = api.post(f"{path}/reveal")
+            assert response.json() == {"api_key": key}
+            assert response.headers["Cache-Control"] == "no-store"
+
+        ciphertext = asyncio.run(database_ciphertext())
+        assert ciphertext != key
+        assert Fernet(encryption_key).decrypt(ciphertext.encode("ascii")).decode() == key
+
+        with TestClient(create_app(config, keitaro_transport=httpx.MockTransport(handle))) as api:
+            assert api.get(f"{BASE}/campaigns").status_code == 200
+            assert used_keys[-1] == key
+    finally:
+        asyncio.run(database_ciphertext(cleanup=True))
 
 
 def test_reads_are_retried_after_a_transient_timeout(client, fake):

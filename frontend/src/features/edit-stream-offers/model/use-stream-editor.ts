@@ -5,8 +5,11 @@ import { streamHistoryKey, streamMutationsKey, streamsQuery, updateStream } from
 import type { Stream, StreamCommand } from '@/entities/stream'
 import { ApiError } from '@/shared/api/http'
 
-type EditorUiState = { notice: string; detachingOfferId: number | null }
-const initialUi: EditorUiState = { notice: '', detachingOfferId: null }
+type EditorUiState = {
+  notice: 'stream.publishSuccess' | 'stream.discardSuccess' | null
+  detachingOfferId: number | null
+}
+const initialUi: EditorUiState = { notice: null, detachingOfferId: null }
 
 export function useStreamEditor(stream: Stream, refreshing: boolean) {
   const [ui, setUi] = useState(initialUi)
@@ -16,16 +19,16 @@ export function useStreamEditor(stream: Stream, refreshing: boolean) {
     mutationKey: streamMutationsKey(stream.campaign_id),
     mutationFn: (command: StreamCommand) => updateStream(stream, command),
     onMutate: async () => {
-      setUi((current) => ({ ...current, notice: '' }))
+      setUi((current) => ({ ...current, notice: null }))
       await queryClient.cancelQueries({ queryKey })
     },
     onSuccess: (next, command) => {
       queryClient.setQueryData<Stream[]>(queryKey, (current) => current?.map((row) => row.id === next.id ? next : row))
       if (command.action === 'publish') {
-        setUi((current) => ({ ...current, notice: 'Изменения сохранены в Keitaro.' }))
+        setUi((current) => ({ ...current, notice: 'stream.publishSuccess' }))
         void queryClient.invalidateQueries({ queryKey: streamHistoryKey(stream.campaign_id) })
       }
-      if (command.action === 'cancel') setUi((current) => ({ ...current, notice: 'Изменения отменены.' }))
+      if (command.action === 'cancel') setUi((current) => ({ ...current, notice: 'stream.discardSuccess' }))
     },
     onError: async (error) => {
       if (error instanceof ApiError && error.status === 409) {
