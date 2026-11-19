@@ -1,4 +1,4 @@
-import { Activity, GitFork, Layers3, Moon, Sun } from 'lucide-react'
+import { Activity, FileText, GitFork, Layers3, Moon, Sun } from 'lucide-react'
 import { useEffect } from 'react'
 import { Link, NavLink, Outlet } from 'react-router'
 
@@ -36,6 +36,7 @@ export function RootLayout() {
         <nav className="app-nav" aria-label={t('nav.main')}>
           <NavLink to="/campaigns"><Layers3 aria-hidden="true" />{t('nav.campaigns')}</NavLink>
           <NavLink to="/status"><Activity aria-hidden="true" />{t('nav.status')}</NavLink>
+          <NavLink to="/about-task"><FileText aria-hidden="true" />{t('nav.about')}</NavLink>
         </nav>
         <div className="sidebar-utilities">
           <Button

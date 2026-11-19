@@ -2,7 +2,7 @@
 
 Тестовое задание Adrobot. Приложение открывает существующую кампанию Keitaro, показывает её потоки и редактирует состав и доли офферов. Бэкенд использует FastAPI, SQLAlchemy 2, PostgreSQL и Alembic. Фронтенд собран на React и TypeScript по FSD с React Router, Redux Toolkit, TanStack Query, TanStack Table, Tailwind и shadcn/ui.
 
-[Технический отчёт в HTML](docs/adrobot-report.html) описывает таблицы, связи, API и карту файлов.
+Вкладка «О задаче» в левом меню описывает таблицы, связи, API и карту файлов. Для чтения вне приложения доступен [технический отчёт в HTML](docs/adrobot-report.html).
 
 ## Запуск через Docker
 

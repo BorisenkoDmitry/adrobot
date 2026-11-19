@@ -1,0 +1,53 @@
+import type { Locale } from '@/shared/i18n'
+
+const ru = {
+  intro: 'Что умеет редактор кампаний Keitaro, как устроены данные и где искать нужный код.',
+  contents: 'На этой странице',
+  overview: 'Что сделали',
+  database: 'Таблицы и связи',
+  api: 'Запросы API',
+  backend: 'Карта бэкенда',
+  frontend: 'Карта фронтенда',
+  run: 'Запуск и тесты',
+  historyHeading: 'Зачем нужна история',
+  historyNote: 'В журнале видны даты изменения офферов и их долей. Сопоставь эти даты с кликами в отчётах Keitaro, чтобы разобраться, как менялся трафик. Журнал ведётся с подтверждённых публикаций через Adrobot.',
+  relationHeading: 'Связь редактора с журналом',
+  relationBefore: 'Одна запись редактора соответствует нескольким публикациям. Логическая связь проходит по паре',
+  relationAfter: 'Внешний ключ между таблицами отсутствует. Таблица ключей самостоятельная.',
+  indexBefore: 'Индекс',
+  indexAfter: 'ускоряет выборку истории по кампании и переход по курсору в обе стороны. Alembic отслеживает версию миграций в alembic_version.',
+  request: 'Запрос',
+  purpose: 'За что отвечает',
+  publishExample: 'Пример запроса публикации в Keitaro',
+  apiNote: 'FastAPI добавляет заголовок Api-Key. Конфликт версии возвращает 409, ошибку формата или нарушение правил редактора — 422.',
+  pathsFrom: 'Пути от',
+  runSetup: 'Создай .env по образцу .env.example и укажи адрес и ключ Keitaro. Для сохранения ключа через интерфейс настрой KEITARO_KEY_ENCRYPTION_KEY.',
+  runNote: 'Docker Compose запускает PostgreSQL, применяет миграции Alembic, поднимает FastAPI и отдаёт React через Nginx. Интеграционные тесты используют отдельную PostgreSQL и проверяют редактор, историю и шифрование ключа.',
+}
+
+const en: typeof ru = {
+  intro: 'What the Keitaro campaign editor does, how it stores data and where to find the code.',
+  contents: 'On this page',
+  overview: 'What we built',
+  database: 'Tables and relationships',
+  api: 'API endpoints',
+  backend: 'Backend file map',
+  frontend: 'Frontend file map',
+  run: 'Run and test',
+  historyHeading: 'Why history matters',
+  historyNote: 'The log shows when offers and their shares changed. Match those dates with clicks in Keitaro reports to see how traffic changed. The log tracks confirmed publications made through Adrobot.',
+  relationHeading: 'How the editor and history are linked',
+  relationBefore: 'An editor record can have several publications. They share the pair',
+  relationAfter: 'There is no foreign key between these tables. The credentials table is independent.',
+  indexBefore: 'The index',
+  indexAfter: 'supports campaign history queries and cursor navigation in both directions. Alembic tracks migrations in alembic_version.',
+  request: 'Request',
+  purpose: 'What it does',
+  publishExample: 'Example Keitaro publish request',
+  apiNote: 'FastAPI adds the Api-Key header. Version conflicts return 409. Invalid requests or violations of editing rules return 422.',
+  pathsFrom: 'Paths relative to',
+  runSetup: 'Create .env from .env.example and set the Keitaro URL and API key. Configure KEITARO_KEY_ENCRYPTION_KEY to save a key from the interface.',
+  runNote: 'Docker Compose starts PostgreSQL, runs Alembic migrations, starts FastAPI and serves React through Nginx. Integration tests use a separate PostgreSQL database and cover the editor, history and key encryption.',
+}
+
+export const aboutCopy = { ru, en } satisfies Record<Locale, typeof ru>

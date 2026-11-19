@@ -17,6 +17,13 @@ export const router = createBrowserRouter([
       { path: 'campaigns/:campaignId', element: <CampaignStreamsPage /> },
       { path: 'campaigns/:campaignId/history', element: <CampaignHistoryPage /> },
       { path: 'status', element: <OverviewPage /> },
+      {
+        path: 'about-task',
+        lazy: async () => {
+          const { AboutTaskPage } = await import('@/pages/about-task')
+          return { Component: AboutTaskPage }
+        },
+      },
       { path: '*', element: <NotFoundPage /> },
     ],
   },
